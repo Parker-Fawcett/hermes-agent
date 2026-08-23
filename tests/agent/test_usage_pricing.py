@@ -250,6 +250,24 @@ def test_anthropic_dated_direct_keys_still_win_over_normalization():
     assert dated.output_cost_per_million == bare.output_cost_per_million
 
 
+def test_anthropic_dated_snapshot_session_estimates_cost_not_unknown():
+    """A pinned dated snapshot id must yield a dollar estimate, not
+    ``unknown`` — the user-visible symptom in #92673 (every usage row for a
+    pinned snapshot was written with cost_status='unknown' and zero spend).
+    Mirrors the #50295 Bedrock estimate-level regression.
+    """
+    usage = SimpleNamespace(
+        input_tokens=1000,
+        output_tokens=500,
+        cache_read_tokens=0,
+        cache_write_tokens=0,
+    )
+    for model in ("claude-haiku-4-5-20251001", "claude-sonnet-4-5-20250929"):
+        result = estimate_usage_cost(model, usage, provider="anthropic")
+        assert result.status == "estimated", model
+        assert result.amount_usd is not None, model
+
+
 
 
 
